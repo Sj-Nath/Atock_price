@@ -1,0 +1,97 @@
+#load up our packages.#
+#install.packages("quantmod")
+library(tidyverse)
+library(tidyquant)
+library(timetk)
+#install.packages("broom")
+library(quantmod)
+library(ggplot2)
+library(magrittr)
+library(tseries)
+library(forecast)
+library(broom)
+# make quantmod available
+library(quantmod)
+
+
+data("USeconomic")
+#iip <- read.csv("D:/Financial Analytics/R/time series/iip.csv")
+USE<-USeconomic
+#To study the structure of the series
+str(USE)
+head(USE)
+#to state that it is a time series
+ts(USE,frequency=4, start=c(1954,1))
+attributes(USE)
+
+plot(USE)
+#To make the series stationary
+
+
+decomp<-decompose(USE)
+decomp$figure
+plot(decomp$figure, type='b',xlab='Month', ylab='Seasonality Index', col='blue', las=2)
+
+lGNP<-log(GNP)
+lM1<-log(M1)
+decomplGNP<-decompose(lGNP)
+
+plot(lGNP)
+plot(decomplGNP)
+#install.packages("forecast")
+library(forecast)
+d.lGNP<-diff(lGNP)
+
+#L.lGNP<-lag(lGNP)
+plot(lGNP)
+
+plot(d.lGNP)
+#Test for normality
+ks.test(d.lGNP,"pnorm",mean(d.lGNP),sd(d.lGNP))
+#Test for normality
+shapiro.test(d.lGNP)
+
+
+#stationarity test
+adf.test(lGNP, alternative="stationary", k=0)
+
+adf.test(d.lGNP, alternative="stationary", k=0)
+
+
+
+acf(lGNP)
+
+acf(d.lGNP)
+pacf(d.lGNP)
+
+library(forecast)
+modelGNP<-auto.arima(d.lGNP)
+summary(modelGNP)
+
+
+attributes(modelGNP)
+modelGNP$coef
+#ACF and PACF plots
+acf(modelGNP$residuals,main="ACF plot or Correlogram")
+
+pacf(modelGNP$residuals, main="PACF plot or Partial Correlogram")
+
+
+#Ljung box test
+Box.test(modelGNP$residuals,lag=20)
+
+
+#Residual Plot
+hist(modelGNP$residuals, col='red', xlab='Error', main='Histogram of Residuals: ModelGNP', freq=FALSE)
+lines(density(modelGNP$residuals))
+ks.test(modelGNP$residuals,"pnorm",mean(modelGNP$residuals),sd(modelGNP$residuals))
+
+
+#Forecast
+f<-forecast(modelGNP,10)
+library(ggplot2)
+autoplot(f)
+accuracy(f)
+
+
+

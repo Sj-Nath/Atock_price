@@ -1,0 +1,177 @@
+#load up our packages.#
+install.packages("quantmod")
+library(tidyverse)
+library(tidyquant)
+library(timetk)
+install.packages("broom")
+library(quantmod)
+library(ggplot2)
+library(magrittr)
+library(tseries)
+library(forecast)
+library(broom)
+# make quantmod available
+library(quantmod)
+## Loading required package: xts
+## Loading required package: zoo
+## Attaching package: 'zoo'
+# get S&P500 prices
+#getSymbols("SNP", src="yahoo")
+
+#getSymbols("AAPL", from = '2017-01-01',to = "2018-03-01",warnings = FALSE,auto.assign = TRUE)
+
+#ts(AAPL,frequency=250,start=c(2017,1))
+#attributes(AAPL)
+#plot(AAPL)
+
+#chart_Series(AAPL)
+getSymbols("RELIANCE.NS", src="yahoo")
+RIL<-data.frame(RELIANCE.NS)
+
+RIL$date <- as.Date(row.names(RIL))
+head(RIL)
+class(RIL)
+
+ts(RIL,frequency=365,start=c(2007,1))
+attributes(RIL)
+plot(RIL)
+
+#ggplot2 download or enhanced data visualization package for R.
+library(ggplot2)
+# create a time series plot of SNP 
+#SNP = tidy(SNP) %>% 
+
+
+ggplot(RIL) + geom_line(aes(x=date, y=RELIANCE.NS.Adjusted)) +
+  labs(x="date", y="RIL Closing Price")
+
+
+# make dplyr available
+library(dplyr)
+RIL<-na.omit(RIL)
+# Create a lag of closing price
+RIL$lRELIANCE.NS.Adjusted <- lag(RIL$RELIANCE.NS.Adjusted, k=1)
+
+summary(RIL$RELIANCE.NS.Adjusted)
+install.packages("forecast")
+library(forecast)
+library(tseries)
+
+
+cor(RIL$RELIANCE.NS.Adjusted, RIL$lRELIANCE.NS.Adjusted, use="complete.obs")
+
+Y <- RIL$RELIANCE.NS.Adjusted
+d.Y <- diff(Y)
+L.y<-RIL$lRELIANCE.NS.Adjusted
+
+ret<-diff(log(RIL$RELIANCE.NS.Adjusted))
+summary(ret)
+ks.test(ret,"pnorm",mean(ret),sd(ret))
+
+shapiro.test(ret)
+
+# Dickey-Fuller test for variable
+adf.test(Y, alternative="stationary", k=0)
+adf.test(d.Y, alternative="stationary", k=0)
+adf.test(ret, alternative="stationary", k=0)
+
+
+adf.test(Y, alternative="explosive", k=0)
+adf.test(d.Y, alternative="explosive", k=0)
+adf.test(ret, alternative="explosive", k=0)
+
+plot(L.y)
+plot(d.Y)
+plot(ret)
+
+
+#difflag<-lm(d.Y ~ L.Y,na.action=na.omit)
+#summary(lm(d.Y ~ L.Y + trend, na.action=na.omit))
+
+# Augmented Dickey-Fuller test
+adf.test(Y, alternative="stationary")
+
+# DF and ADF tests for differenced variable
+adf.test(d.Y, k=0)
+adf.test(d.Y)
+adf.test(ret)
+
+# ACF and PACF
+acf(Y)
+pacf(Y)
+
+acf(d.Y)
+pacf(d.Y)
+acf(ret)
+pacf(ret)
+
+model1<-auto.arima(d.Y)
+summary(model1)
+
+attributes(model1)
+model1$coef
+#ACF and PACF plots
+acf(model1$residuals,main="ACF plot or Correlogram")
+
+pacf(model1$residuals, main="PACF plot or Partial Correlogram")
+
+
+#Ljung box test
+Box.test(model1$residuals,lag=40)
+
+model2<-auto.arima(ret)
+model2
+
+
+acf(model2$residuals,main="ACF plot or Correlogram model2")
+pacf(model2$residuals,main="PACF plot or Partial Correlogram model2")
+#Ljung box test
+#null hypothesis of independence in a given time series,  residuals are independently distributed. 
+Box.test(model2$residuals,lag=20,type="Ljung-Box")
+
+
+
+#Residual Plot
+hist(model1$residuals, col='red', xlab='Error', main='Histogram of Residuals: Model1', freq=FALSE)
+lines(density(model1$residuals))
+ks.test(model1$residuals,"pnorm",mean(model1$residuals),sd(model1$residuals))
+
+
+
+hist(model2$residuals, col='blue', xlab='Error', main='Histogram of Residuals: Model2', freq=FALSE)
+lines(density(model2$residuals))
+ks.test(model2$residuals,"pnorm",mean(model2$residuals),sd(model2$residuals))
+
+
+#########generate the difference in ret#####
+
+d.ret<- diff(ret)
+
+adf.test(d.ret, alternative="explosive", k=0)
+# Augmented Dickey-Fuller test
+adf.test(d.ret, alternative="stationary")
+
+
+model3<-auto.arima(d.ret)
+summary(model3)
+
+Box.test(model3$residuals,lag=20)
+
+hist(model3$residuals, col='blue', xlab='Error', main='Histogram of Residuals: Model3', freq=FALSE)
+lines(density(model3$residuals))
+
+ks.test(model3$residuals,"pnorm",mean(model2$residuals),sd(model2$residuals))
+
+
+
+#Forecast
+f<-forecast(model1,60)
+library(ggplot2)
+autoplot(f)
+accuracy(f)
+
+f2<-forecast(model2,60)
+library(ggplot2)
+autoplot(f2)
+accuracy(f2)
+

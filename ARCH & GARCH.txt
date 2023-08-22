@@ -1,0 +1,159 @@
+#Libraries
+library(quantmod)
+library(xts)
+library(PerformanceAnalytics)
+library(rugarch)
+
+library(FinTS) #for function `ArchTest()`
+library(rugarch) #for GARCH models
+library(tseries) # for `adf.test()`
+library(dynlm) #for function `dynlm()`
+library(vars) # for function `VAR()`
+library(nlWaldTest) # for the `nlWaldtest()` function
+library(lmtest) #for `coeftest()` and `bptest()`.
+library(broom) #for `glance(`) and `tidy()`
+library(car) #for `hccm()` robust standard errors
+library(sandwich)
+library(knitr) #for `kable()`
+library(forecast) 
+#AAPL
+
+
+
+getSymbols(^BSESN, src=yahoo, from=2020-01-01, to= 2023-6-30)
+
+sensex-BSESN
+
+sensex-na.omit(sensex)
+
+
+#Candle stick plot where orange represents closing price was
+#lower than opening price and green indicates the if closing price was higher
+#than the opening price
+chartSeries(sensex[2021-12])
+
+
+
+chartSeries(sensex)
+
+#Daily Returns
+
+head(BSESN)
+return-CalculateReturns(BSESN$BSESN.Close)
+chartSeries(return)
+
+View(return)
+
+#since first row has a missing value, we need to remove that
+
+return-return[-1]
+
+View(return)
+#to see the distribution
+hist(return)
+summary(return)
+#to plot the histogram with density and normal curve
+  #return in blue, density curve in green and normal curve in red
+chart.Histogram(return, methods=c('add.density', 'add.normal'),colorset=c('blue','green','red'))
+#We observe that the green line is taller and tails are thicker
+chartSeries(return,theme=white)
+
+
+#ks.test(return,pnorm,mean(return),sd(return))
+
+#capture Annualized volatility
+return-na.omit(return)
+sd(return)
+sqrt(252)sd(return)
+
+sqrt(252)sd(return[2020])
+sqrt(252)sd(return[2021])
+
+sqrt(252)sd(return[2022])
+
+sqrt(252)sd(return[2023])
+
+chart.RollingPerformance(R=return[20202023],width=22,FUN=sd.annualized,scale=252, main=Sensex annualized volatility)
+
+
+chart.RollingPerformance(R=return[20202023],width=252,FUN=sd.annualized,scale=252, main=Sensex annualized volatility)
+
+#ARCH effects
+library(FinTS)
+ArchTest(return)
+
+
+####1. Standard GARCH or sGARCH model with constant mean
+
+s-ugarchspec(mean.model = list(armaOrder=c(0,0)),
+              variance.model=list(model=sGARCH),
+              distribution.model = norm)
+
+m-ugarchfit(data=return,spec=s)
+summary(m)
+m
+f-ugarchforecast(fitORspec = m,
+                  n.ahead=20)
+
+plot(fitted(f))
+
+plot(sigma(f))
+
+##Application Portfolio allocation
+##Lets calculate annualized volatility
+#and store in v
+v-sqrt(252)  sigma(m)
+#weight assigned to risky assets
+w- 0.05v
+plot(merge(v,w), 
+     multi.panel=T)
+tail(w)
+
+
+#p value in goodness of fit tests 
+# should be greater than 
+# five percent and not close to zero
+
+
+## 2. GARCH with SSTD
+## see goodness of fit p value
+## is greater than zero
+
+s-ugarchspec(mean.model = list(armaOrder=c(0,0)),
+              variance.model=list(model=sGARCH, garchOrder=c(1,0)),
+              distribution.model = sstd)
+
+m-ugarchfit(data=return,spec=s)
+summary(m)
+m
+#To ensure all 12 plots come in one page
+dev.off()
+par(mar = c(1, 1, 1, 1))
+
+plot(m,which='all')
+sessionInfo()
+
+###GJR GARCH model
+
+s-ugarchspec(mean.model = list(armaOrder=c(0,0)),
+              variance.model=list(model=gjrGARCH, garchOrder=c(1,1)),
+              distribution.model = sstd)
+
+m-ugarchfit(data=return,spec=s)
+summary(m)
+m
+
+plot(m,which=all)
+
+
+
+
+f-ugarchforecast(fitORspec = m,
+                  n.ahead=20)
+
+plot(fitted(f))
+
+plot(sigma(f))
+
+
+

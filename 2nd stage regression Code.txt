@@ -1,0 +1,39 @@
+Stock_list<-list("RELIANCE.NS","TCS.NS","SBIN.NS","LT.NS","HDFCBANK.NS","ICICIBANK.NS","ITC.NS","AXISBANK.NS","INFY.NS","WIPRO.NS","HCLTECH.NS","CIPLA.NS","DRREDDY.NS","SUNPHARMA.NS","LUPIN.NS","AUROPHARMA.NS","BIOCON.NS","GLENMARK.NS"#,##"CADILAHC.NS" ##-Not returning data,"HINDUNILVR.NS","ASIANPAINT.NS","PIDILITIND.NS","BRITANNIA.NS","GODREJCP.NS","COLPAL.NS","DABUR.NS","MARICO.NS","HAVELLS.NS","NESTLEIND.NS","BERGEPAINT.NS","HINDPETRO.NS","SAIL.NS","NTPC.NS","GAIL.NS","BHEL.NS","ONGC.NS","POWERGRID.NS","COALINDIA.NS","DMART.NS","HINDZINC.NS","HINDALCO.NS","ADANIPOWER.NS","TATAPOWER.NS","TATAMOTORS.NS","NMDC.NS","M&M.NS","MARUTI.NS","JINDALSTEL.NS","JSWSTEEL.NS","NATIONALUM.NS","TATASTEEL.NS","EICHERMOT.NS","HEROMOTOCO.NS","TVSMOTOR.NS","BAJAJ-AUTO.NS","ULTRACEMCO.NS","GRASIM.NS",ACC.NS","AMBUJACEM.NS"
+)
+nifty_data<- NSEI
+head(nifty_data)
+return_NSE<-diff(log(NSEI[,6]))
+
+new_row <- data.frame(Column1 = numeric(),
+                      Column2 = numeric(),
+                      Column3 = numeric(),
+                      stringsAsFactors = FALSE)
+library(quantmod)
+for (x in Stock_list){
+  ticker1<- x
+  start_date<-as.Date("2021-05-01")
+  end_date<-as.Date("2023-05-31")
+  getSymbols(ticker1,src="yahoo",from= start_date,to= end_date)
+  x_data<- get(ticker1)
+  return_x<-diff(log(x_data[,6]))
+  df<-data.frame(return_x,return_NSE)
+  model<- lm(return_x~return_NSE, data=df)
+  summary_x<-summary(model)
+  intercept_x <- summary_x$coefficients[1,1]
+  coeff_x <- summary_x$coefficients[2,1]
+  E_Return<-mean(intercept_x+coeff_x*return_NSE[2:516,1])
+  print(E_Return)
+    row <- data.frame(Column1 = coeff_x,
+                      Column2 = intercept_x,
+                      Column3 = E_Return)
+  new_row <- rbind(new_row, row)
+}
+print(new_row)
+
+return_risk_free<- matrix(6/252,58,1)
+Excess_returns<-matrix(new_row[,3]-return_risk_free[,1],ncol=1)
+Excess_market<-matrix(mean(return_NSE[2:516,1])-6/252,58,1)
+print(mean(return_NSE[2:516,1])-6/252)
+Excess_df<-data.frame(Excess_returns,Excess_market)
+Excess_model<-lm(Excess_returns~Excess_market, data=Excess_df)
+summary(Excess_model)
